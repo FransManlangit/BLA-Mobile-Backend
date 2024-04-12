@@ -842,6 +842,7 @@ router.put(
       }
 
       const updatedUser = {
+        email: req.body.email || userFind.email,
         firstname: req.body.firstname || userFind.firstname,
         lastname: req.body.lastname || userFind.lastname,
         middlename: req.body.middlename || userFind.middlename,

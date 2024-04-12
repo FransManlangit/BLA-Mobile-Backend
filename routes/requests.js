@@ -171,49 +171,51 @@ router.get("/:id", async (req, res) => {
 
 // Working Paymongo Api with gcash and upload for authorization letter
 router.post("/", uploadOptions.any(), async (req, res) => {
-  console.log("req body", req.body);
   try {
-    const file = req.files;
-    console.log("file", file);
-    if (!file) return res.status(400).send("no image in the request");
+    // Check if files exist in the request
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).send("No image in the request");
+    }
 
+    // Filter authorization image from files
     const authorizationImage = req.files.filter(
       (file) => file.fieldname === "authorizationImage"
     );
-    // Upload image to Cloudinary
-    const cloudinaryFolderOption = {
-      folder: "Authorization Letter",
-      crop: "scale",
-    };
 
-    console.log("Authorizaiton", authorizationImage);
+    let imageAuthorization = null;
 
-    let imageAuthization = [];
-
+    // Upload authorization image to Cloudinary if it exists
     if (authorizationImage.length > 0) {
+      const cloudinaryFolderOption = {
+        folder: "Authorization Letter",
+        crop: "scale",
+      };
+
       const autImageResult = await cloudinary.v2.uploader.upload(
         authorizationImage[0].path,
         cloudinaryFolderOption
       );
 
-      imageAuthization = {
+      imageAuthorization = {
         public_id: autImageResult.public_id,
         url: autImageResult.secure_url,
       };
     }
 
-    const requestItems = JSON.parse(req.body.requestItems); // Parse requestItems string to JSON array
-    const user = req.body.user;
-    const email = req.body.email;
-    const purpose = req.body.purpose;
-    const dateofRequest = req.body.dateOfRequest;
-    const paidAt = req.body.paidAt;
-    const requestStatus = req.body.requestStatus;
-    const paymentInfo = req.body.paymentInfo;
-    const totalPrice = req.body.totalPrice;
+    // Extract request data from the request body
+    const {
+      requestItems,
+      user,
+      email,
+      purpose,
+      dateofRequest,
+      paidAt,
+      requestStatus,
+      paymentInfo,
+      totalPrice,
+    } = req.body;
 
-    console.log("request items", requestItems);
-
+    // Create a new request object
     const request = new Request({
       requestItems: requestItems.map((item) => ({
         name: item.name,
@@ -221,18 +223,20 @@ router.post("/", uploadOptions.any(), async (req, res) => {
         document: item._id,
         quantity: item.quantity,
       })),
-      purpose: purpose,
-      dateofRequest: dateofRequest,
-      paidAt: paidAt,
-      requestStatus: requestStatus,
-      user: user,
-      paymentInfo: paymentInfo,
-      totalPrice: totalPrice,
-      authorizationLetter: imageAuthization || null,
+      purpose,
+      dateofRequest,
+      paidAt,
+      requestStatus,
+      user,
+      paymentInfo,
+      totalPrice,
+      authorizationLetter: imageAuthorization,
     });
 
+    // Save the request to the database
     const savedRequest = await request.save();
 
+    // Generate Paymongo token and send email
     const paymongoToken = await new PaymongoToken({
       requestId: request._id,
       token: crypto.randomBytes(32).toString("hex"),
@@ -241,9 +245,9 @@ router.post("/", uploadOptions.any(), async (req, res) => {
 
     await sendEmail(email, savedRequest, user, request);
 
+    // Handle Gcash payment if applicable
     if (paymentInfo === "Gcash") {
       const temporaryLink = `http://192.168.100.206:4000/api/v1/requests/paymong-gcash/${paymongoToken.token}/${request._id}`;
-
       const checkoutUrl = await PaymongoPayment(requestItems, temporaryLink);
       console.log(checkoutUrl, "checkout");
       return res.json({ checkoutUrl });
