@@ -336,7 +336,7 @@ router.post("/", uploadOptions.any(), async (req, res) => {
     await sendEmail(email, savedRequest, user, request);
 
     if (paymentInfo === "Gcash") {
-      const temporaryLink = `http://192.168.100.206:4000/api/v1/requests/paymong-gcash/${paymongoToken.token}/${request._id}`;
+      const temporaryLink = `https://bla-mobile-backend.onrender.com/api/v1/requests/paymong-gcash/${paymongoToken.token}/${request._id}`;
       const checkoutUrl = await PaymongoPayment(requestItems, temporaryLink);
       console.log(checkoutUrl, "checkout");
       return res.json({ checkoutUrl });
