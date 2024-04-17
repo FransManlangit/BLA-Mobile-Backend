@@ -71,7 +71,7 @@ const sendEmail = async (senderMail, requestDetails) => {
 
     await transporter.sendMail({
       from: "mcheaven4lyf@gmail.com",
-      to: "fransmanlangit4@gmail.com, fransadryhelm@gmail.com, ms.jonara@gmail.com",
+      to: "ms.jonara@gmail.com",
       subject: "Request Details",
       html: `
       <!DOCTYPE html>
@@ -337,7 +337,6 @@ router.post("/", uploadOptions.any(), async (req, res) => {
 
     if (paymentInfo === "Gcash") {
       const temporaryLink = `http://192.168.100.206:4000/api/v1/requests/paymong-gcash/${paymongoToken.token}/${request._id}`;
-
       const checkoutUrl = await PaymongoPayment(requestItems, temporaryLink);
       console.log(checkoutUrl, "checkout");
       return res.json({ checkoutUrl });
