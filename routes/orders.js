@@ -376,7 +376,7 @@ router.post("/", async (req, res) => {
 
     // Create a checkout session and obtain the checkout URL based on the payment method
     if (paymentInfo === "Gcash") {
-      const temporaryLink = `https://bla-mobile-backend.onrender.com/api/v1/orders/paymong-gcash/${paymongoToken.token}/${order._id}`;
+      const temporaryLink = `https://bla-mobile-backend-xe24.onrender.com/api/v1/orders/paymong-gcash/${paymongoToken.token}/${order._id}`;
       const checkoutUrl = await PaymongoPayment(orderItems, temporaryLink);
       console.log(checkoutUrl, "checkout");
       return res.json({ checkoutUrl });
