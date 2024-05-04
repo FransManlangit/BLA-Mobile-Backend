@@ -263,6 +263,42 @@ router.get("/:id", async (req, res) => {
 // });
 
 
+
+router.put("/requestSchedule", async (req, res) => {
+  const { user, dateRelease, requestId } = req.body;
+  console.log("Req", req.body)
+  try {
+    // Check if the user exists
+    const userExists = await User.findById(user);
+    if (!userExists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    // Check if the order exists
+    const request = await Request.findById(requestId);
+    if (!request) {
+      return res.status(400).json({ error: "Request not found" });
+    }
+
+    // Check if the order status is "Approved"
+    if (request.requestStatus !== "Approved") {
+      return res.status(400).json({ error: "Order is not approved" });
+    }
+
+   const Updatefield = {
+    dateRelease
+   }
+   
+
+   
+  const savedRequest = await Request.findByIdAndUpdate(requestId,Updatefield,{new:true});
+  console.log("Saved", savedRequest)
+    res.status(201).json(savedRequest);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Working Paymongo Api with gcash and upload for authorization letter
 router.post("/", uploadOptions.any(), async (req, res) => {
   console.log("req body", req.body);
@@ -540,7 +576,6 @@ router.get(`/get/userRequests/:userid`, async (req, res) => {
       return res.status(500).json({ success: false });
     }
 
-    // Extract and send only the relevant information to the frontend
     const formattedUserRequests = userRequestList.map((request) => ({
       requestId: request._id,
       dateofRequest: request.dateofRequest,
@@ -555,12 +590,15 @@ router.get(`/get/userRequests/:userid`, async (req, res) => {
       })),
     }));
 
+    console.log("Formatted User Requests:", formattedUserRequests); // Add console log here
+
     res.status(200).json(formattedUserRequests);
   } catch (error) {
     console.error("Error fetching user requests:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 router.delete("/:id", (req, res) => {
   Request.findByIdAndRemove(req.params.id)
@@ -624,64 +662,82 @@ router.get(`/get/userSchedule/:userid`, async (req, res) => {
   res.send(userScheduleList);
 });
 
+// router.get("/userSchedule/:id", async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+//     console.log("User ID:", userId);
+
+//     const requests = await Request.find({ user: userId }).select('dateRelease');
+//     console.log("Requests:", requests);
+
+//     if (!requests || requests.length === 0) {
+//       return res.status(404).json({ message: "Requests not found" });
+//     }
+
+//     const dateRelease = requests.map(request => request.dateRelease);
+//     console.log("Date Releases:", dateRelease);
+
+//     res.status(200).json(dateRelease);
+//   } catch (error) {
+//     console.error("Error fetching user schedules:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+
+
 router.get("/userSchedule/:id", async (req, res) => {
   try {
     const userId = req.params.id;
     console.log(userId);
 
-    const user = await User.findById(userId);
-    console.log(user, "user");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const userSchedule = await Schedule.find({ user: userId })
-      .populate({
-        path: "user",
-      })
-      .populate({
-        path: "userSchedule",
-        populate: { path: "schedule", model: "Schedule" },
-      });
+    const requests = await Request.find({ user: userId }); // Find all requests associated with the user ID
+    // if (!requests) {
+    //   return res.status(404).json({ message: "Requests not found" });
+    // }
 
-    res.status(200).json(userSchedule);
+   
+    console.log("RequestSasSasASasasAS", requests)
+    res.status(200).json(requests); // Sending the schedules array in the response
   } catch (error) {
-    console.error("Error fetching user schedule:", error);
+    console.error("Error fetching user schedules:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
-router.get("/requestItems/:id", async (req, res) => {
-  try {
-    const userId = req.params.id;
 
-    // Check if the userId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
+// router.get("/requestItems/:id", async (req, res) => {
+//   try {
+//     const userId = req.params.id;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     // Check if the userId is a valid ObjectId
+//     if (!mongoose.Types.ObjectId.isValid(userId)) {
+//       return res.status(400).json({ message: "Invalid user ID" });
+//     }
 
-    const requestItems = await Request.find({ user: userId })
-      .populate({
-        path: "user",
-      })
-      .populate({
-        path: "requestItems",
-        populate: [
-          { path: "document", model: "Document" },
-          { path: "DateTime", model: "Schedule" }, // Populate the DateTime field from the Schedule model
-        ],
-      });
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    res.status(200).json(requestItems);
-  } catch (error) {
-    console.error("Error fetching request items:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
+//     const requestItems = await Request.find({ user: userId })
+//       .populate({
+//         path: "user",
+//       })
+//       .populate({
+//         path: "requestItems",
+//         populate: [
+//           { path: "document", model: "Document" },
+//           { path: "DateTime", model: "Schedule" }, // Populate the DateTime field from the Schedule model
+//         ],
+//       });
+
+//     res.status(200).json(requestItems);
+//   } catch (error) {
+//     console.error("Error fetching request items:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
 // router.get("/requestItems/:id", async (req, res) => {
 //   try {

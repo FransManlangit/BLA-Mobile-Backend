@@ -90,6 +90,11 @@ const orderSchema = mongoose.Schema({
     type: Boolean,
     default: false,
   },
+
+  dateRelease: {
+    type: Date,
+},
+
 });
 
 orderSchema.virtual("id").get(function () {

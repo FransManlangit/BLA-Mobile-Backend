@@ -7,6 +7,18 @@ const scheduleSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+
+    order:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+     
+    },
+
+    request: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Request',
+       
+    },
     
     DateTime: {
         type: Date,

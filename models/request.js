@@ -46,10 +46,6 @@ const requestSchema = mongoose.Schema({
     default: Date.now,
   },
 
-  dateRelease: {
-    type: Date,
-  },
-
   paidAt: {
     type: Date,
     default: Date.now,
@@ -59,6 +55,10 @@ const requestSchema = mongoose.Schema({
     type: String,
     default: "Pending",
   },
+
+  dateRelease: {
+    type: Date,
+},
 
   paymentInfo: {
     type: String,

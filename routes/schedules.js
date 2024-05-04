@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 
 // Scheduling the release of student document
 router.post("/", async (req, res) => {
-  const { user, DateTime } = req.body;
+  const { user, DateTime, requestId } = req.body; // Include requestId in request body
 
   try {
     // Check if the user exists
@@ -17,9 +17,16 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "User not found" });
     }
 
+    // Check if the request exists and its status is "Approved"
+    const request = await Request.findOne({ _id: requestId, requestStatus: "Approved" });
+    if (!request) {
+      return res.status(400).json({ error: "Request not found or not approved" });
+    }
+
     const schedule = new Schedule({
       DateTime,
       user,
+      request: requestId, // Assign the requestId to the schedule
       dateCreated: new Date(),
     });
 
@@ -29,10 +36,13 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
 
 // Schedule for the claiming of order
-router.post("/orderSchdule", async (req, res) => {
-  const { user, DateTime } = req.body;
+router.post("/orderSchedule", async (req, res) => {
+  const { user, DateTime, orderId } = req.body;
+  
 
   try {
     // Check if the user exists
@@ -41,9 +51,21 @@ router.post("/orderSchdule", async (req, res) => {
       return res.status(400).json({ error: "User not found" });
     }
 
+    // Check if the order exists
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(400).json({ error: "Order not found" });
+    }
+
+    // Check if the order status is "Approved"
+    if (order.orderStatus !== "Approved") {
+      return res.status(400).json({ error: "Order is not approved" });
+    }
+
     const schedule = new Schedule({
       DateTime,
       user,
+      order: orderId, // Assigning the orderId to the schedule
       dateCreated: new Date(),
     });
 
@@ -53,6 +75,28 @@ router.post("/orderSchdule", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// router.post("/orderSchdule", async (req, res) => {
+//   const { user, DateTime } = req.body;
+
+//   try {
+//     // Check if the user exists
+//     const userExists = await User.findById(user);
+//     if (!userExists) {
+//       return res.status(400).json({ error: "User not found" });
+//     }
+
+//     const schedule = new Schedule({
+//       DateTime,
+//       user,
+//       dateCreated: new Date(),
+//     });
+
+//     const savedSchedule = await schedule.save();
+//     res.status(201).json(savedSchedule);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 router.get(`/get/userRequests/:userid`, async (req, res) => {
   try {
@@ -108,7 +152,7 @@ router.get(`/get/userOrders/:userid`, async (req, res) => {
     // Fetch user requests with populated documents
     const userOrderList = await Order.find({ user: userId })
       .populate({
-        path: "oderItems",
+        path: "orderItems",
         populate: {
           path: "product",
           model: "Product",
@@ -149,45 +193,91 @@ router.get(`/get/userOrders/:userid`, async (req, res) => {
 
 router.get("/userSchedule/:id", async (req, res) => {
   try {
-    const userId = req.params.id;
+    const requestId = req.params.id;
 
-    const user = await User.findById(userId);
+    // Find the schedule that matches the request ID
+    const schedule = await Schedule.findOne({ request: requestId }).populate('request');
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    // If schedule not found, return error
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found for the request ID" });
     }
-    const userSchedule = await Schedule.find({ user: userId }).populate({
-      path: "user",
-    });
 
-    console.log(userSchedule, "fransssssss");
-    res.status(200).json(userSchedule);
+    // Retrieve the DateTime from the schedule
+    const dateTime = schedule.DateTime;
+
+    // If request exists, return the DateTime
+    res.status(200).json({ dateTime });
   } catch (error) {
     console.error("Error fetching user schedule:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// router.get("/userSchedule/:id", async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     const userSchedule = await Schedule.find({ user: userId }).populate({
+//       path: "user",
+//     });
+
+//     console.log(userSchedule, "fransssssss");
+//     res.status(200).json(userSchedule);
+//   } catch (error) {
+//     console.error("Error fetching user schedule:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
 // fetching orders Schedule by id
+
 router.get("/userOrderSchedule/:id", async (req, res) => {
   try {
-    const userId = req.params.id;
+    const orderId = req.params.id;
 
-    const user = await User.findById(userId);
+    
+    const schedule = await Schedule.findOne({ order: orderId }).populate('order');
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    // If schedule not found, return error
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found for the order ID" });
     }
-    const userSchedule = await Schedule.find({ user: userId }).populate({
-      path: "user",
-    });
 
-    res.status(200).json(userSchedule);
+    // Retrieve the DateTime from the schedule
+    const dateTime = schedule.DateTime;
+
+    // If order exists, return the DateTime
+    res.status(200).json({ dateTime });
   } catch (error) {
     console.error("Error fetching user schedule:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+// router.get("/userOrderSchedule/:id", async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     const userSchedule = await Schedule.find({ user: userId }).populate({
+//       path: "user",
+//     });
+
+//     res.status(200).json(userSchedule);
+//   } catch (error) {
+//     console.error("Error fetching user schedule:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
 // Get all schedules
 router.get("/", async (req, res) => {

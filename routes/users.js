@@ -673,32 +673,42 @@ router.post(`/student`, uploadOptions.single("avatar"), async (req, res) => {
   try {
     const existingEmail = await User.findOne({ email: req.body.email });
     if (existingEmail) {
-      return res.status(400).send("Email already exists");
+      return res.status(400).json({ error: "Email already exists" });
     }
 
     const existingPhone = await User.findOne({ phone: req.body.phone });
     if (existingPhone) {
-      return res.status(400).send("Phone number already exists");
+      return res.status(400).json({ error: "Phone number already exists" });
     }
 
     const saltRounds = 10;
     const salt = bcrypt.genSaltSync(saltRounds);
+    const password = await bcrypt.hashSync(req.body.password, salt);
 
-    let password = await bcrypt.hashSync(req.body.password, salt);
-
-    const file = req.file;
-    if (!file) return res.status(400).send("no image in the request");
-
-    // Upload category images to Cloudinary
-    const cloudinaryFolderOption = {
-      folder: "User Profile",
-      crop: "scale",
-    };
-
-    const result = await cloudinary.v2.uploader.upload(
-      req.file.path,
-      cloudinaryFolderOption
-    );
+    // Check if an image is provided, otherwise use the default image
+    let avatar;
+    if (!req.file) {
+      // Define your default image URL or public_id here
+      const defaultImageUrl =
+        "https://res.cloudinary.com/dn638duad/image/upload/v1714804250/User%20Profile/defualt_image_odca9a.png";
+      avatar = {
+        url: defaultImageUrl,
+      };
+    } else {
+      // Use the provided image
+      const cloudinaryFolderOption = {
+        folder: "User Profile",
+        crop: "scale",
+      };
+      const result = await cloudinary.v2.uploader.upload(
+        req.file.path,
+        cloudinaryFolderOption
+      );
+      avatar = {
+        public_id: result.public_id,
+        url: result.secure_url,
+      };
+    }
 
     let user = new User({
       firstname: req.body.firstname,
@@ -710,23 +720,85 @@ router.post(`/student`, uploadOptions.single("avatar"), async (req, res) => {
       phone: req.body.phone,
       email: req.body.email,
       password: password,
-      avatar: {
-        public_id: result.public_id,
-        url: result.secure_url,
-      },
+      avatar: avatar,
       role: "student",
     });
 
     user = await user.save();
 
-    if (!user) return res.status(400).send("the user cannot be created!");
+    if (!user) return res.status(400).json({ error: "The user cannot be created" });
 
-    res.send(user);
+    res.status(201).json(user);
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).send("An error occurred during student creation");
+    res.status(500).json({ error: "An error occurred during student creation" });
   }
 });
+
+router.post(`/alumni`, uploadOptions.single("avatar"), async (req, res) => {
+  try {
+    const existingEmail = await User.findOne({ email: req.body.email });
+    if (existingEmail) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
+    const existingPhone = await User.findOne({ phone: req.body.phone });
+    if (existingPhone) {
+      return res.status(400).json({ error: "Phone number already exists" });
+    }
+
+    const saltRounds = 10;
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const password = await bcrypt.hashSync(req.body.password, salt);
+
+    // Check if an image is provided, otherwise use the default image
+    let avatar;
+    if (!req.file) {
+      // Define your default image URL or public_id here
+      const defaultImageUrl =
+        "https://res.cloudinary.com/dn638duad/image/upload/v1714804250/User%20Profile/defualt_image_odca9a.png";
+      avatar = {
+        url: defaultImageUrl,
+      };
+    } else {
+      // Use the provided image
+      const cloudinaryFolderOption = {
+        folder: "User Profile",
+        crop: "scale",
+      };
+      const result = await cloudinary.v2.uploader.upload(
+        req.file.path,
+        cloudinaryFolderOption
+      );
+      avatar = {
+        public_id: result.public_id,
+        url: result.secure_url,
+      };
+    }
+
+    let user = new User({
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      middlename: req.body.middlename,
+      phone: req.body.phone,
+      email: req.body.email,
+      password: password,
+      avatar: avatar,
+      role: "alumni",
+    });
+
+    user = await user.save();
+
+    if (!user) return res.status(400).json({ error: "The user cannot be created" });
+
+    res.status(201).json(user);
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ error: "An error occurred during student creation" });
+  }
+});
+
+
 
 // router.post("/register", async (req, res) => {
 //   let user = new User({

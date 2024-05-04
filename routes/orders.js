@@ -173,6 +173,50 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.put("/orderSchedule", async (req, res) => {
+  const { user, dateRelease, orderId } = req.body;
+
+  try {
+    // Check if the user exists
+    const userExists = await User.findById(user);
+    if (!userExists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    // Check if the order exists
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(400).json({ error: "Order not found" });
+    }
+
+    // Check if the order status is "Approved"
+    if (order.orderStatus !== "Approved") {
+      return res.status(400).json({ error: "Order is not approved" });
+    }
+
+    // Update the dateRelease field
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { dateRelease },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(400).json({ error: "Failed to update order" });
+    }
+
+    console.log("Updated Order:", updatedOrder);
+    return res.status(200).json(updatedOrder);
+  } catch (err) {
+    console.error("Error editing order:", err);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+
+
+
+
 // fethcing Order Id
 router.get(`/:id`, async (req, res) => {
   const order = await Order.findById(req.params.id)
