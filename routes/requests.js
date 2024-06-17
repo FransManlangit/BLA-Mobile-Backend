@@ -11,6 +11,8 @@ const crypto = require("crypto");
 const axios = require("axios");
 const mongoose = require("mongoose");
 
+
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -45,6 +47,133 @@ const storage = multer.diskStorage({
 const uploadOptions = multer({ storage: storage });
 
 // Sending email to Admin if the when the users request
+
+
+const sendSmS = async (sendPhoneNumber, requestDetails, dateRelease) => {
+  var https = require('follow-redirects').https;
+
+  var options = {
+    'method': 'POST',
+    'hostname': 'vv4myr.api.infobip.com',
+    
+    'path': '/sms/2/text/advanced',
+    'headers': {
+      'Authorization': 'App ab9d963509de1027c2452db3206e15af-11d7d58c-bcfe-4000-bf32-231b9a4b9f65',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    'maxRedirects': 20
+  };
+
+  var req = https.request(options, function (res) {
+    var chunks = [];
+
+    res.on("data", function (chunk) {
+      chunks.push(chunk);
+    });
+
+    res.on("end", function () {
+      var body = Buffer.concat(chunks);
+      console.log(body.toString());
+    });
+
+    res.on("error", function (error) {
+      console.error(error);
+    });
+  });
+
+
+  const { studentName, documents, status } = requestDetails;
+  const documentList = documents.join(', ');
+
+  // const messageText = `Hello ${studentName},\n\nWe wanted to let you know that the status of your document request has been updated to ${status}. The documents you requested are as follows:\n\n${documentList}\n\nThe release date for your documents is: ${dateRelease}\n\nPlease check and login to our website https://www.blessedlandacademy.online/ for more details.\n\nThank you,\nMs. Jonara De Jesus`;
+  const formattedDateRelease = dateRelease ? new Date(dateRelease).toLocaleString() : "Not specified";
+
+  const messageText = `Hello ${studentName},\n\nWe wanted to let you know that the status of your document request has been updated to ${status}. The documents you requested are as follows:\n\n${documentList}\n\nThe release date for your documents is: ${formattedDateRelease}\n\nPlease check and login to our website https://www.blessedlandacademy.online/ for more details.\n\nThank you,\nMs. Jonara De Jesus`;
+
+  
+  var postData = JSON.stringify({
+    "messages": [
+      {
+        "destinations": [{ "to": "639283653020" }],
+        "from": "YourInstitutionName",
+        "text": messageText
+      }
+    ]
+  });
+  console.log(messageText, "Messageeeee")
+  console.log("Message Sent")
+  req.write(postData);
+  req.end();
+};
+
+module.exports = sendSmS;
+
+
+
+
+
+// const sendSmS = async (sendPhoneNumber, requestDetails) => {
+//   var https = require('follow-redirects').https;
+
+//   var options = {
+//     'method': 'POST',
+//     'hostname': 'vv4myr.api.infobip.com',
+//     'path': '/sms/2/text/advanced',
+//     'headers': {
+//       'Authorization': 'App 003026bbc133714df1834b8638bb496e-8f4b3c9a-e931-478d-a994-28a725159ab9',
+//       'Content-Type': 'application/json',
+//       'Accept': 'application/json'
+//     },
+//     'maxRedirects': 20
+//   };
+
+//   var req = https.request(options, function (res) {
+//     var chunks = [];
+
+//     res.on("data", function (chunk) {
+//       chunks.push(chunk);
+//     });
+
+//     res.on("end", function () {
+//       var body = Buffer.concat(chunks);
+//       console.log(body.toString());
+//     });
+
+//     res.on("error", function (error) {
+//       console.error(error);
+//     });
+//   });
+
+//   const { studentName, documents, status } = requestDetails;
+//   const documentList = documents.join(', ');
+//   const formattedDateRelease = dateRelease ? new Date(dateRelease).toLocaleString() : "Not specified";
+//   // const messageText = `Hello ${studentName},\n\nWe wanted to let you know that the status of your document request has been updated to ${status}. The documents you requested are as follows:\n\n${documentList}\n\nPlease check and login to our website https://www.blessedlandacademy.online/ for more details.\n\nThank you,\nMs. Jonara De Jesus`;
+//   const messageText = `Hello ${studentName},\n\nWe wanted to let you know that the status of your document request has been updated to ${status}. The documents you requested are as follows:\n\n${documentList}\n\nThe release date for your documents is: ${formattedDateRelease}\n\nPlease check and login to our website https://www.blessedlandacademy.online/ for more details.\n\nThank you,\nMs. Jonara De Jesus`;
+
+
+//   var postData = JSON.stringify({
+//     "messages": [
+//       {
+//         "destinations": [{ "to": "639283653020" }],
+//         "from": "YourInstitutionName",
+//         "text": messageText
+//       }
+//     ]
+//   });
+//   console.log(messageText, "Messageeeee")
+//  console.log("Message Sent")
+//   req.write(postData);
+//   req.end();
+// };
+
+// module.exports = sendSmS;
+
+
+
+
+
+
 const sendEmail = async (senderMail, requestDetails) => {
   try {
     // Send email
@@ -171,133 +300,88 @@ router.get("/:id", async (req, res) => {
 
 
 
-// router.post("/", uploadOptions.any(), async (req, res) => {
-//   try {
-//     // Check if files exist in the request
-//     if (!req.files || Object.keys(req.files).length === 0) {
-//       return res.status(400).send("No image in the request");
-//     }
-
-//     // Filter authorization image from files
-//     const authorizationImage = req.files.filter(
-//       (file) => file.fieldname === "authorizationImage"
-//     );
-
-//     let imageAuthorization = null;
-
-//     // Upload authorization image to Cloudinary if it exists
-//     if (authorizationImage.length > 0) {
-//       const cloudinaryFolderOption = {
-//         folder: "Authorization Letter",
-//         crop: "scale",
-//       };
-
-//       const autImageResult = await cloudinary.v2.uploader.upload(
-//         authorizationImage[0].path,
-//         cloudinaryFolderOption
-//       );
-
-//       imageAuthorization = {
-//         public_id: autImageResult.public_id,
-//         url: autImageResult.secure_url,
-//       };
-//     }
-
-//     // Extract request data from the request body
-//     const {
-//       requestItems,
-//       user,
-//       email,
-//       purpose,
-//       dateofRequest,
-//       paidAt,
-//       requestStatus,
-//       paymentInfo,
-//       totalPrice,
-//     } = req.body;
-
-//     // Create a new request object
-//     const request = new Request({
-//       requestItems: requestItems.map((item) => ({
-//         name: item.name,
-//         price: item.price,
-//         document: item._id,
-//         quantity: item.quantity,
-//       })),
-//       purpose,
-//       dateofRequest,
-//       paidAt,
-//       requestStatus,
-//       user,
-//       paymentInfo,
-//       totalPrice,
-//       authorizationLetter: imageAuthorization,
-//     });
-
-//     // Save the request to the database
-//     const savedRequest = await request.save();
-
-//     // Generate Paymongo token and send email
-//     const paymongoToken = await new PaymongoToken({
-//       requestId: request._id,
-//       token: crypto.randomBytes(32).toString("hex"),
-//       verificationTokenExpire: new Date(Date.now() + 2 * 60 * 1000),
-//     }).save();
-
-//     await sendEmail(email, savedRequest, user, request);
-
-//     // Handle Gcash payment if applicable
-//     if (paymentInfo === "Gcash") {
-//       const temporaryLink = `http://192.168.100.206:4000/api/v1/requests/paymong-gcash/${paymongoToken.token}/${request._id}`;
-//       const checkoutUrl = await PaymongoPayment(requestItems, temporaryLink);
-//       console.log(checkoutUrl, "checkout");
-//       return res.json({ checkoutUrl });
-//     }
-
-//     // Send response back to the client
-//     res.json(savedRequest);
-//   } catch (error) {
-//     console.error("Error creating request:", error);
-//     res.status(500).send("Error creating request!");
-//   }
-// });
-
-
-
+// new codes to send sms
 router.put("/requestSchedule", async (req, res) => {
   const { user, dateRelease, requestId } = req.body;
-  console.log("Req", req.body)
+  console.log("Req", req.body);
+
   try {
     // Check if the user exists
-    const userExists = await User.findById(user);
+    const userExists = await User.findById(user._id); // Accessing the _id field
     if (!userExists) {
       return res.status(400).json({ error: "User not found" });
     }
 
-    // Check if the order exists
-    const request = await Request.findById(requestId);
+    // Check if the request exists
+    const request = await Request.findById(requestId).populate("requestItems.document");
     if (!request) {
       return res.status(400).json({ error: "Request not found" });
     }
 
-    // Check if the order status is "Approved"
-    if (request.requestStatus !== "Approved") {
-      return res.status(400).json({ error: "Order is not approved" });
+    // Check if the request status is "Approved by Registrar"
+    if (request.requestStatus !== "Approved by Registrar") {
+      return res.status(400).json({ error: "Order is not approved by registrar" });
     }
 
-   const Updatefield = {
-    dateRelease
-   }
-   
+    // Extract document names from requestItems
+    const documents = request.requestItems.map(item => item.document.name);
 
-   
-  const savedRequest = await Request.findByIdAndUpdate(requestId,Updatefield,{new:true});
-  console.log("Saved", savedRequest)
-    res.status(201).json(savedRequest);
+    // Update the dateRelease field
+    const updatedRequest = await Request.findByIdAndUpdate(requestId, { dateRelease }, { new: true });
+
+    // Send SMS
+    const requestDetails = {
+      studentName: userExists.lastname,
+      status: updatedRequest.requestStatus,
+      documents: documents
+    };
+
+    sendSmS(userExists.phoneNumber, requestDetails, dateRelease);
+
+    res.status(201).json(updatedRequest);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+
+
+// old codes 
+// router.put("/requestSchedule", async (req, res) => {
+//   const { user, dateRelease, requestId } = req.body;
+//   console.log("Req", req.body)
+//   try {
+//     // Check if the user exists
+//     const userExists = await User.findById(user);
+//     if (!userExists) {
+//       return res.status(400).json({ error: "User not found" });
+//     }
+
+//     // Check if the order exists
+//     const request = await Request.findById(requestId);
+//     if (!request) {
+//       return res.status(400).json({ error: "Request not found" });
+//     }
+
+//     // Check if the order status is "Approved"
+//     if (request.requestStatus !== "Approved") {
+//       return res.status(400).json({ error: "Order is not approved" });
+//     }
+
+//    const Updatefield = {
+//     dateRelease
+//    }
+   
+
+   
+//   const savedRequest = await Request.findByIdAndUpdate(requestId,Updatefield,{new:true});
+//   console.log("Saved", savedRequest)
+//     res.status(201).json(savedRequest);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 // Working Paymongo Api with gcash and upload for authorization letter
 router.post("/", uploadOptions.any(), async (req, res) => {
@@ -662,27 +746,7 @@ router.get(`/get/userSchedule/:userid`, async (req, res) => {
   res.send(userScheduleList);
 });
 
-// router.get("/userSchedule/:id", async (req, res) => {
-//   try {
-//     const userId = req.params.id;
-//     console.log("User ID:", userId);
 
-//     const requests = await Request.find({ user: userId }).select('dateRelease');
-//     console.log("Requests:", requests);
-
-//     if (!requests || requests.length === 0) {
-//       return res.status(404).json({ message: "Requests not found" });
-//     }
-
-//     const dateRelease = requests.map(request => request.dateRelease);
-//     console.log("Date Releases:", dateRelease);
-
-//     res.status(200).json(dateRelease);
-//   } catch (error) {
-//     console.error("Error fetching user schedules:", error);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// });
 
 
 
@@ -836,19 +900,153 @@ router.get("/requests/year", async (req, res) => {
   }
 });
 
+
+
+// old codess 
 router.put("/:id", async (req, res) => {
-  const request = await Request.findByIdAndUpdate(
-    req.params.id,
-    {
-      requestStatus: req.body.requestStatus,
-    },
-    { new: true }
-  );
+  try {
+    const request = await Request.findByIdAndUpdate(
+      req.params.id,
+      {
+        requestStatus: req.body.requestStatus,
+      },
+      { new: true }
+    ).populate('user').populate('requestItems.document');
 
-  if (!request) return res.status(400).send("the request cannot be update!");
+    if (!request) {
+      return res.status(400).send("The request cannot be updated!");
+    }
 
-  res.send(request);
+    // Retrieve user information
+    const user = request.user;
+    if (!user) {
+      return res.status(400).send("User not found!");
+    }
+
+    // Construct the request details
+    const requestDetails = {
+      studentName: user.lastname, 
+       status: req.body.requestStatus, 
+      documents: request.requestItems.map(item => item.name)
+    };
+
+    const sendPhoneNumber = user.phoneNumber; // Assuming the User model has a phoneNumber field
+
+    await sendSmS(sendPhoneNumber, requestDetails);
+
+    res.send(request);
+  } catch (error) {
+    res.status(500).send("An error occurred: " + error.message);
+  }
 });
+
+
+// router.post("/", uploadOptions.any(), async (req, res) => {
+//   try {
+//     // Check if files exist in the request
+//     if (!req.files || Object.keys(req.files).length === 0) {
+//       return res.status(400).send("No image in the request");
+//     }
+
+//     // Filter authorization image from files
+//     const authorizationImage = req.files.filter(
+//       (file) => file.fieldname === "authorizationImage"
+//     );
+
+//     let imageAuthorization = null;
+
+//     // Upload authorization image to Cloudinary if it exists
+//     if (authorizationImage.length > 0) {
+//       const cloudinaryFolderOption = {
+//         folder: "Authorization Letter",
+//         crop: "scale",
+//       };
+
+//       const autImageResult = await cloudinary.v2.uploader.upload(
+//         authorizationImage[0].path,
+//         cloudinaryFolderOption
+//       );
+
+//       imageAuthorization = {
+//         public_id: autImageResult.public_id,
+//         url: autImageResult.secure_url,
+//       };
+//     }
+
+//     // Extract request data from the request body
+//     const {
+//       requestItems,
+//       user,
+//       email,
+//       purpose,
+//       dateofRequest,
+//       paidAt,
+//       requestStatus,
+//       paymentInfo,
+//       totalPrice,
+//     } = req.body;
+
+//     // Create a new request object
+//     const request = new Request({
+//       requestItems: requestItems.map((item) => ({
+//         name: item.name,
+//         price: item.price,
+//         document: item._id,
+//         quantity: item.quantity,
+//       })),
+//       purpose,
+//       dateofRequest,
+//       paidAt,
+//       requestStatus,
+//       user,
+//       paymentInfo,
+//       totalPrice,
+//       authorizationLetter: imageAuthorization,
+//     });
+
+//     // Save the request to the database
+//     const savedRequest = await request.save();
+
+//     // Generate Paymongo token and send email
+//     const paymongoToken = await new PaymongoToken({
+//       requestId: request._id,
+//       token: crypto.randomBytes(32).toString("hex"),
+//       verificationTokenExpire: new Date(Date.now() + 2 * 60 * 1000),
+//     }).save();
+
+//     await sendEmail(email, savedRequest, user, request);
+
+//     // Handle Gcash payment if applicable
+//     if (paymentInfo === "Gcash") {
+//       const temporaryLink = `http://192.168.100.206:4000/api/v1/requests/paymong-gcash/${paymongoToken.token}/${request._id}`;
+//       const checkoutUrl = await PaymongoPayment(requestItems, temporaryLink);
+//       console.log(checkoutUrl, "checkout");
+//       return res.json({ checkoutUrl });
+//     }
+
+//     // Send response back to the client
+//     res.json(savedRequest);
+//   } catch (error) {
+//     console.error("Error creating request:", error);
+//     res.status(500).send("Error creating request!");
+//   }
+// });
+
+// router.put("/:id", async (req, res) => {
+//   const request = await Request.findByIdAndUpdate(
+//     req.params.id,
+//     {
+//       requestStatus: req.body.requestStatus,
+//     },
+//     { new: true }
+//   );
+
+//   sendSmS()
+
+//   if (!request) return res.status(400).send("the request cannot be update!");
+
+//   res.send(request);
+// });
 
 // router.post("/", async (req, res) => {
 //   try {
