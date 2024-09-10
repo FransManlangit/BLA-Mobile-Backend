@@ -151,6 +151,26 @@ const sendEmail = async (senderMail, orderDetails) => {
   }
 };
 
+
+
+router.get("/userSchedule/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    console.log(userId);
+
+    const orders = await Order.find({ user: userId }).select('orderStatus dateRelease'); // Select the necessary fields
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "Orders not found" });
+    }
+   
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Error fetching user schedules:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // fetching users with order and populate their specific details
 router.get("/", async (req, res) => {
   try {
